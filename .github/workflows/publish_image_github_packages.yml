@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '**'
+
 jobs:
   push_to_registry:
     name: Push Docker image to GitHub Packages
