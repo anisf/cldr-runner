@@ -1,5 +1,5 @@
 ARG BASE_IMAGE_URI=quay.io/ansible/ansible-runner
-ARG BASE_IMAGE_TAG=stable-2.10-latest
+ARG BASE_IMAGE_TAG=stable-2.12-latest
 
 FROM ${BASE_IMAGE_URI}:${BASE_IMAGE_TAG} AS base
 
@@ -19,9 +19,8 @@ COPY payload /runner/
 RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc \
     && cp /runner/deps/*.repo /etc/yum.repos.d/ \
     && dnf clean expire-cache \
-    && dnf install -y python38-devel git curl which bash gcc terraform nano vim unzip \
+    && dnf install -y python38-devel git curl which bash gcc vim unzip \
     && pip install -r /runner/deps/python_base.txt \
-    && pip install -r /runner/deps/python_secondary.txt \
     && ansible-galaxy role install -p /opt/cldr-runner/roles -r /runner/deps/ansible.yml \
     && ansible-galaxy collection install -p /opt/cldr-runner/collections -r /runner/deps/ansible.yml \
     && mkdir -p /home/runner/.ansible/log \
@@ -48,60 +47,3 @@ LABEL maintainer="Cloudera Labs <cloudera-labs@cloudera.com>" \
 
 ## Set up the execution
 CMD ["ansible-runner", "run", "/runner"]
-
-# We use stages here to force the different build layers to always be run depending on switches
-# Otherwise caching can cause layers to be skipped or always included undesirably
-FROM base AS options
-ARG KUBECTL
-ARG AWS
-ARG GCLOUD
-ARG AZURE
-ARG CDPY
-
-# Update Build Information
-ARG BUILD_DATE
-ARG BUILD_TAG
-
-# Set random data to ensure this never caches
-ARG CACHE_TIME=placeholder
-
-ENV CLDR_BUILD_DATE=${BUILD_DATE}
-ENV CLDR_BUILD_VER=${BUILD_TAG}
-# Metadata
-LABEL org.label-schema.build-date="${CLDR_BUILD_DATE}" \
-      org.label-schema.version="${CLDR_BUILD_VER}"
-
-RUN if [[ -z "$KUBECTL" ]] ; then echo KUBECTL not requested ; else \
-        dnf install -y kubectl \
-      ; fi \
-    && if [[ -z "$AWS" ]] ; then echo AWS not requested ; else \
-        pip install -r /runner/deps/python_aws.txt && \
-        curl -o /usr/local/bin/aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/aws-iam-authenticator && \
-        chmod +x /usr/local/bin/aws-iam-authenticator && \
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip" && \
-        unzip /tmp/awscliv2.zip -d /tmp && \
-        /tmp/aws/install && \
-        rm /tmp/awscliv2.zip && rm -rf /tmp/aws \
-      ; fi \
-    && if [[ -z "$GCLOUD" ]] ; then echo GCLOUD not requested ; else \
-        dnf install -y google-cloud-sdk && \
-        pip install -r /runner/deps/python_gcp.txt \
-      ; fi \
-    && if [[ -z "$AZURE" ]] ; then echo AZURE not requested ; else \
-        dnf download azure-cli && \
-        rpm -ivh --nodeps azure-cli-*.rpm && \
-        rm -f azure-cli-*.rpm && \
-        pip install -r /runner/deps/python_azure.txt && \
-        pip install azure-cli-core==2.30.0 --upgrade \
-      ; fi \
-    && if [[ -z "$CDPY" ]] ; then echo CDPY not requested ; else \
-        pip install git+https://github.com/cloudera-labs/cdpy@main#egg=cdpy --upgrade \
-      ; fi \
-    && echo "Symlinking 'python3' to 'python'" && ln -fs /usr/bin/python3 /usr/bin/python \
-    && echo "Purging Pip cache" &&  pip cache purge || echo "No Pip cache to purge" \
-    && echo "Cleaning dnf/yum cache" && dnf clean all \
-  	&& rm -rf /var/cache/yum \
-    && rm -rf /var/cache/dnf
-
-## Ensure gcloud and az are on global path
-ENV PATH "$PATH:/home/runner/.local/bin"
