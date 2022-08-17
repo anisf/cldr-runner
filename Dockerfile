@@ -21,9 +21,9 @@ RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc \
     && dnf clean expire-cache \
     && dnf install -y python38-devel git curl which bash gcc vim unzip \
     && pip install -r /runner/deps/python_base.txt \
+    && mkdir -p /home/runner/.ansible/log /opt/cldr-runner/{roles,collections} \
     && ansible-galaxy role install -p /opt/cldr-runner/roles -r /runner/deps/ansible.yml \
     && ansible-galaxy collection install -p /opt/cldr-runner/collections -r /runner/deps/ansible.yml \
-    && mkdir -p /home/runner/.ansible/log \
     && mv /runner/bashrc /home/runner/.bashrc \
     && echo "Purging Pip cache" &&  pip cache purge || echo "No Pip cache to purge" \
     && echo "Cleaning dnf/yum cache" && dnf clean all \
