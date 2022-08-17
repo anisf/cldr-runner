@@ -16,9 +16,7 @@ COPY payload /runner/
 # NOTE: Ansible collections and roles are installed into a non-default location
 # Downstream implementers and users are expected to include this location if
 # these built-ins are desired by setting the Ansible collections path variable
-RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc \
-    && cp /runner/deps/*.repo /etc/yum.repos.d/ \
-    && dnf clean expire-cache \
+RUN dnf clean expire-cache \
     && dnf install -y python38-devel git curl which bash gcc vim unzip \
     && pip install -r /runner/deps/python_base.txt \
     && mkdir -p /home/runner/.ansible/log /opt/cldr-runner/{roles,collections} \
