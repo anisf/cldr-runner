@@ -15,10 +15,6 @@ netaddr
 jsonmerge
 deepdiff>=5
 
-# OpenStack and Kubernetes
-openstacksdk
-openshift
-
 # CDP Runtime
 apache-ranger==0.0.5
 nipyapi==0.19.0
