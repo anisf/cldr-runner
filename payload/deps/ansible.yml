@@ -4,7 +4,7 @@ collections:
   # Cloudera collections
   - name: https://github.com/anisf/cloudera.cluster.git
     type: git
-    version: v3.3.1
+    version: v3.3.2
 
   - name: community.hashi_vault
     version: 3.1.0
